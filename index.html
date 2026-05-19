@@ -1,305 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design Project Plan Updater</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-.app { padding: 1.5rem 0; font-family: var(--font-sans); }
-.header { margin-bottom: 1.5rem; }
-.header h1 { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
-.header p { font-size: 14px; color: var(--color-text-secondary); margin-top: 4px; }
-.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
-.label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 5px; display: block; }
-.status { padding: 10px 14px; border-radius: var(--border-radius-md); font-size: 13px; margin-top: 10px; display: none; line-height: 1.5; }
-.status.info { background: var(--color-background-info); color: var(--color-text-info); }
-.status.success { background: var(--color-background-success); color: var(--color-text-success); }
-.status.danger { background: var(--color-background-danger); color: var(--color-text-danger); }
-.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
-.badge.green { background: #EAF3DE; color: #3B6D11; }
-.badge.amber { background: #FAEEDA; color: #854F0B; }
-.badge.blue { background: #E6F1FB; color: #185FA5; }
-.badge.gray { background: #F1EFE8; color: #5F5E5A; }
-.col-pill { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: 20px; padding: 3px 10px; font-size: 12px; color: var(--color-text-secondary); display: inline-block; margin: 3px 3px 0 0; }
-table { width: 100%; font-size: 13px; border-collapse: collapse; table-layout: fixed; }
-th { text-align: left; padding: 6px 8px; font-weight: 500; font-size: 12px; color: var(--color-text-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); }
-td { padding: 7px 8px; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-tr:last-child td { border-bottom: none; }
-#add-form { display: none; padding-top: 1rem; margin-top: 1rem; border-top: 0.5px solid var(--color-border-tertiary); }
-#add-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.step-indicator { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; }
-.step-dot { width: 24px; height: 24px; border-radius: 50%; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--color-text-secondary); flex-shrink: 0; }
-.step-dot.active { background: #E6F1FB; border-color: #85B7EB; color: #185FA5; }
-.step-dot.done { background: #EAF3DE; border-color: #97C459; color: #3B6D11; }
-.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: -2px; margin-right: 6px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-</style>
+    :root {
+      --color-bg: #ffffff;
+      --color-bg-secondary: #f8f9fa;
+      --color-bg-info: #e6f1fb;
+      --color-bg-success: #eaf3de;
+      --color-bg-danger: #fde8e8;
+      --color-text: #1a1a1a;
+      --color-text-secondary: #6b7280;
+      --color-border: #e5e7eb;
+      --color-accent: #185fa5;
+      --color-accent-bg: #e6f1fb;
+      --color-success: #3b6d11;
+      --color-danger: #b91c1c;
+      --color-info: #185fa5;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-pill: 999px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+    }
 
-<div class="app">
-  <h2 class="sr-only">Smartsheet Design Project Plan updater — Claude acts as a secure middleman to read and update your sheet.</h2>
+    body {
+      font-family: var(--font);
+      background: var(--color-bg-secondary);
+      color: var(--color-text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
 
-  <div class="header">
-    <h1><i class="ti ti-table" aria-hidden="true" style="font-size:18px; vertical-align:-2px; margin-right:8px;"></i>Design project plan updater</h1>
-    <p>Claude securely proxies your Smartsheet requests — no CORS issues.</p>
-  </div>
+    .app {
+      max-width: 860px;
+      margin: 0 auto;
+    }
 
-  <div class="card" id="connect-card">
-    <div class="step-indicator">
-      <div class="step-dot active" id="dot1">1</div>
-      <span style="font-size:13px; color:var(--color-text-secondary);">Enter token & connect</span>
-    </div>
-    <label class="label">Smartsheet API token</label>
-    <div style="display:flex; gap:8px;">
-      <input type="password" id="api-token" placeholder="Paste your API token" style="flex:1; font-size:13px;" />
-      <button onclick="connectSheet()" id="connect-btn">Connect <i class="ti ti-plug" aria-hidden="true"></i></button>
-    </div>
-    <p style="font-size:12px; color:var(--color-text-secondary); margin-top:6px;">Get your token: Smartsheet → Account → Personal Settings → API Access</p>
-    <div class="status" id="connect-status"></div>
+    /* Header */
+    .header { margin-bottom: 1.75rem; }
+    .header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .header p { font-size: 0.875rem; color: var(--color-text-secondary); margin-top: 4px; }
 
-    <div id="sheet-selector" style="display:none; margin-top:1rem; padding-top:1rem; border-top:0.5px solid var(--color-border-tertiary);">
-      <div class="step-indicator">
-        <div class="step-dot active" id="dot2">2</div>
-        <span style="font-size:13px; color:var(--color-text-secondary);">Select your sheet</span>
+    /* Card */
+    .card {
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow);
+    }
+    .card--muted {
+      background: var(--color-bg-secondary);
+      border-color: transparent;
+      box-shadow: none;
+    }
+
+    /* Steps */
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      margin-bottom: 1rem;
+    }
+    .step__dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 1px solid var(--color-border);
+      background: var(--color-bg-secondary);
+      display: grid;
+      place-items: center;
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      flex-shrink: 0;
+      font-weight: 600;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .step__dot--active { background: var(--color-accent-bg); border-color: #85b7eb; color: var(--color-accent); }
+    .step__dot--done { background: var(--color-bg-success); border-color: #97c459; color: var(--color-success); }
+    .step__label { font-size: 0.8125rem; color: var(--color-text-secondary); font-weight: 500; }
+
+    /* Form elements */
+    label.field-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      margin-bottom: 5px;
+    }
+    input, select {
+      width: 100%;
+      font-size: 0.8125rem;
+      font-family: var(--font);
+      color: var(--color-text);
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.625rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus, select:focus { border-color: var(--color-accent); }
+    input[type="password"] { letter-spacing: 0.1em; }
+
+    .input-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .input-row input,
+    .input-row select { flex: 1; }
+
+    /* Buttons */
+    button {
+      font-family: var(--font);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      padding: 0.5rem 0.875rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border);
+      background: var(--color-bg);
+      color: var(--color-text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      transition: background 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    button:hover { background: var(--color-bg-secondary); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    button.btn--primary {
+      background: var(--color-accent);
+      border-color: var(--color-accent);
+      color: #fff;
+    }
+    button.btn--primary:hover { background: #1450a3; }
+
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+
+    /* Status */
+    .status {
+      display: none;
+      padding: 0.625rem 0.875rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      margin-top: 0.625rem;
+      line-height: 1.5;
+    }
+    .status--info    { display: block; background: var(--color-bg-info);    color: var(--color-info); }
+    .status--success { display: block; background: var(--color-bg-success);  color: var(--color-success); }
+    .status--danger  { display: block; background: var(--color-bg-danger);   color: var(--color-danger); }
+
+    /* Divider */
+    .divider { border: none; border-top: 1px solid var(--color-border); margin: 1rem 0; }
+
+    /* Sheet header */
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.625rem;
+      margin-bottom: 0.75rem;
+    }
+    .sheet-header__name { font-size: 0.9375rem; font-weight: 600; }
+    .sheet-header__meta { font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 2px; }
+    .sheet-header__actions { display: flex; gap: 0.5rem; }
+
+    /* Column pills */
+    .pill-list { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 0.75rem; }
+    .pill {
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-pill);
+      padding: 2px 10px;
+      font-size: 0.6875rem;
+      color: var(--color-text-secondary);
+    }
+
+    /* Add form */
+    .add-form { display: none; padding-top: 1rem; margin-top: 1rem; border-top: 1px solid var(--color-border); }
+    .add-form.is-open { display: block; }
+    .add-form__title { font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.75rem; }
+    .add-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.625rem;
+    }
+    @media (max-width: 480px) { .add-fields { grid-template-columns: 1fr; } }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; font-size: 0.8125rem; border-collapse: collapse; table-layout: fixed; }
+    th {
+      text-align: left;
+      padding: 6px 8px;
+      font-weight: 600;
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      border-bottom: 1px solid var(--color-border);
+    }
+    td {
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    tr:last-child td { border-bottom: none; }
+    .row-count { font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.625rem; }
+    .empty-state { font-size: 0.8125rem; color: var(--color-text-secondary); padding: 0.5rem 0; }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 0.6875rem;
+      font-weight: 600;
+    }
+    .badge--green  { background: #eaf3de; color: #3b6d11; }
+    .badge--amber  { background: #faeeda; color: #854f0b; }
+    .badge--blue   { background: #e6f1fb; color: #185fa5; }
+    .badge--gray   { background: #f1efe8; color: #5f5e5a; }
+
+    /* Help card */
+    .help-card__title { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.375rem; }
+    .help-card__body  { font-size: 0.8125rem; color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 0.75rem; }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 13px; height: 13px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Design project plan updater">
+
+    <header class="header">
+      <h1>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Design project plan updater
+      </h1>
+      <p>Claude securely proxies your Smartsheet requests — no CORS issues.</p>
+    </header>
+
+    <!-- Step 1: Connect -->
+    <section class="card" id="connect-card">
+      <div class="step">
+        <div class="step__dot step__dot--active" id="dot1" aria-label="Step 1">1</div>
+        <span class="step__label">Enter token &amp; connect</span>
       </div>
-      <label class="label">Sheet</label>
-      <div style="display:flex; gap:8px;">
-        <select id="sheet-select" style="flex:1; font-size:13px;"><option value="">— pick a sheet —</option></select>
-        <button onclick="loadSheet()" id="load-btn">Load <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
-      </div>
-      <div class="status" id="sheet-status"></div>
-    </div>
-  </div>
 
-  <div id="sheet-panel" style="display:none;">
-    <div class="card">
-      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-        <div>
-          <p style="font-size:15px; font-weight:500;" id="sheet-name-display"></p>
-          <p style="font-size:12px; color:var(--color-text-secondary);" id="sheet-meta"></p>
+      <label class="field-label" for="api-token">Smartsheet API token</label>
+      <div class="input-row">
+        <input type="password" id="api-token" placeholder="Paste your API token" autocomplete="off" />
+        <button id="connect-btn" class="btn--primary" type="button">Connect</button>
+      </div>
+      <p style="font-size:0.75rem; color:var(--color-text-secondary); margin-top:6px;">
+        Get your token: Smartsheet → Account → Personal Settings → API Access
+      </p>
+      <div class="status" id="connect-status" role="status" aria-live="polite"></div>
+
+      <!-- Step 2: Select sheet -->
+      <div id="sheet-selector" hidden>
+        <hr class="divider" />
+        <div class="step">
+          <div class="step__dot step__dot--active" id="dot2" aria-label="Step 2">2</div>
+          <span class="step__label">Select your sheet</span>
         </div>
-        <div style="display:flex; gap:8px;">
-          <button onclick="refreshSheet()" style="font-size:13px;"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</button>
-          <button onclick="toggleAdd()" style="font-size:13px;" id="add-btn"><i class="ti ti-plus" aria-hidden="true"></i> Add project</button>
+        <label class="field-label" for="sheet-select">Sheet</label>
+        <div class="input-row">
+          <select id="sheet-select">
+            <option value="">— pick a sheet —</option>
+          </select>
+          <button id="load-btn" class="btn--primary" type="button">Load</button>
         </div>
+        <div class="status" id="sheet-status" role="status" aria-live="polite"></div>
       </div>
-      <div id="col-pills"></div>
+    </section>
 
-      <div id="add-form">
-        <p style="font-size:13px; font-weight:500; margin-bottom:10px;">New project</p>
-        <div id="add-fields"></div>
-        <div class="actions">
-          <button onclick="submitRow()">Save <i class="ti ti-check" aria-hidden="true"></i></button>
-          <button onclick="toggleAdd()">Cancel</button>
+    <!-- Sheet panel (shown after load) -->
+    <div id="sheet-panel" hidden>
+
+      <!-- Sheet info + add form -->
+      <section class="card">
+        <div class="sheet-header">
+          <div>
+            <p class="sheet-header__name" id="sheet-name-display"></p>
+            <p class="sheet-header__meta" id="sheet-meta"></p>
+          </div>
+          <div class="sheet-header__actions">
+            <button id="refresh-btn" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+              Refresh
+            </button>
+            <button id="add-btn" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add project
+            </button>
+          </div>
         </div>
-        <div class="status" id="add-status"></div>
-      </div>
+
+        <div class="pill-list" id="col-pills"></div>
+
+        <div class="add-form" id="add-form">
+          <p class="add-form__title">New project</p>
+          <div class="add-fields" id="add-fields"></div>
+          <div class="actions">
+            <button id="save-btn" class="btn--primary" type="button">Save</button>
+            <button id="cancel-btn" type="button">Cancel</button>
+          </div>
+          <div class="status" id="add-status" role="status" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <!-- Rows table -->
+      <section class="card">
+        <p class="row-count" id="row-count"></p>
+        <div id="rows-table"></div>
+      </section>
+
+      <!-- Weekly helper -->
+      <section class="card card--muted">
+        <p class="help-card__title">Weekly update helper</p>
+        <p class="help-card__body">Once your sheet is loaded, ask Claude to review it and flag projects that need attention this week.</p>
+        <button id="weekly-btn" type="button">Ask Claude for weekly review ↗</button>
+      </section>
+
     </div>
+  </main>
 
-    <div class="card" id="rows-card">
-      <p style="font-size:13px; font-weight:500; margin-bottom:10px;" id="row-count"></p>
-      <div id="rows-table"></div>
-    </div>
+  <script type="module">
+    // ── State ────────────────────────────────────────────────────────────────
+    const state = { token: '', sheetId: '', sheetName: '', columns: [], rows: [] };
 
-    <div class="card" style="background:var(--color-background-secondary); border:none;">
-      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-        <i class="ti ti-calendar-repeat" aria-hidden="true" style="font-size:16px; color:var(--color-text-secondary);"></i>
-        <p style="font-size:14px; font-weight:500;">Weekly update helper</p>
-      </div>
-      <p style="font-size:13px; color:var(--color-text-secondary); line-height:1.6; margin-bottom:10px;">Once your sheet is loaded, ask Claude to review it and flag projects that need attention this week.</p>
-      <button onclick="weeklyReview()">Ask Claude for weekly review ↗</button>
-    </div>
-  </div>
-</div>
+    // ── DOM refs ─────────────────────────────────────────────────────────────
+    const $ = id => document.getElementById(id);
 
-<script>
-let token = '';
-let sheetId = '';
-let sheetName = '';
-let columns = [];
-let rows = [];
+    const els = {
+      apiToken:      $('api-token'),
+      connectBtn:    $('connect-btn'),
+      connectStatus: $('connect-status'),
+      sheetSelector: $('sheet-selector'),
+      sheetSelect:   $('sheet-select'),
+      loadBtn:       $('load-btn'),
+      sheetStatus:   $('sheet-status'),
+      dot1:          $('dot1'),
+      dot2:          $('dot2'),
+      sheetPanel:    $('sheet-panel'),
+      sheetName:     $('sheet-name-display'),
+      sheetMeta:     $('sheet-meta'),
+      refreshBtn:    $('refresh-btn'),
+      addBtn:        $('add-btn'),
+      colPills:      $('col-pills'),
+      addForm:       $('add-form'),
+      addFields:     $('add-fields'),
+      saveBtn:       $('save-btn'),
+      cancelBtn:     $('cancel-btn'),
+      addStatus:     $('add-status'),
+      rowCount:      $('row-count'),
+      rowsTable:     $('rows-table'),
+      weeklyBtn:     $('weekly-btn'),
+    };
 
-function showStatus(id, msg, type) {
-  const el = document.getElementById(id);
-  el.innerHTML = msg;
-  el.className = 'status ' + type;
-  el.style.display = 'block';
-}
-function hideStatus(id) { document.getElementById(id).style.display = 'none'; }
+    // ── Utilities ─────────────────────────────────────────────────────────────
+    function setStatus(el, html, type) {
+      el.innerHTML = html;
+      el.className = `status status--${type}`;
+    }
 
-async function callClaude(prompt) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      system: `You are a Smartsheet API assistant. The user provides a Smartsheet API token and instructions. You must call the Smartsheet REST API using fetch() and return ONLY a JSON object with this shape: {"success": true/false, "data": <parsed API response>, "error": "optional error string"}. Never explain. Never add commentary. Return raw JSON only. No markdown. No backticks.`,
-      messages: [{ role: 'user', content: prompt }]
-    })
-  });
-  const d = await res.json();
-  const text = (d.content || []).map(b => b.text || '').join('');
-  try { return JSON.parse(text); }
-  catch { return { success: false, error: text }; }
-}
+    function clearStatus(el) {
+      el.innerHTML = '';
+      el.className = 'status';
+    }
 
-async function connectSheet() {
-  token = document.getElementById('api-token').value.trim();
-  if (!token) { showStatus('connect-status', 'Please enter your API token.', 'danger'); return; }
-  const btn = document.getElementById('connect-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Connecting…';
-  showStatus('connect-status', '<span class="spinner"></span>Connecting to Smartsheet via Claude…', 'info');
+    function setLoading(btn, loading, label) {
+      btn.disabled = loading;
+      btn.innerHTML = loading
+        ? `<span class="spinner" aria-hidden="true"></span>${label}`
+        : label;
+    }
 
-  const result = await callClaude(
-    `Using the Smartsheet API token "${token}", fetch the list of sheets by calling GET https://api.smartsheet.com/2.0/sheets with Authorization: Bearer <token>. Return the result as JSON with success and data fields.`
-  );
+    function stepDone(dot) {
+      dot.className = 'step__dot step__dot--done';
+      dot.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`;
+    }
 
-  btn.disabled = false;
-  btn.innerHTML = 'Connect <i class="ti ti-plug" aria-hidden="true"></i>';
+    function badgeClass(val) {
+      const v = String(val).toLowerCase();
+      if (v.includes('complete') || v.includes('done'))     return 'badge--green';
+      if (v.includes('progress') || v.includes('active'))   return 'badge--blue';
+      if (v.includes('hold')     || v.includes('block'))    return 'badge--amber';
+      return 'badge--gray';
+    }
 
-  if (!result.success || !result.data) {
-    showStatus('connect-status', 'Connection failed: ' + (result.error || 'Unknown error'), 'danger');
-    return;
-  }
+    // ── Claude proxy ──────────────────────────────────────────────────────────
+    async function callClaude(prompt) {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: `You are a Smartsheet API assistant. Call the Smartsheet REST API using fetch() and return ONLY a JSON object: {"success": true/false, "data": <parsed response>, "error": "optional string"}. No commentary. No markdown. Raw JSON only.`,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+      const json = await res.json();
+      const text = (json.content ?? []).map(b => b.text ?? '').join('');
+      try { return JSON.parse(text); }
+      catch { return { success: false, error: text }; }
+    }
 
-  const sheets = result.data.data || [];
-  if (!sheets.length) { showStatus('connect-status', 'Connected but no sheets found.', 'danger'); return; }
-
-  const sel = document.getElementById('sheet-select');
-  sel.innerHTML = '<option value="">— pick a sheet —</option>' + sheets.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-  document.getElementById('sheet-selector').style.display = 'block';
-  document.getElementById('dot1').className = 'step-dot done';
-  document.getElementById('dot1').innerHTML = '<i class="ti ti-check" style="font-size:12px;"></i>';
-  showStatus('connect-status', `Connected! Found ${sheets.length} sheet(s).`, 'success');
-}
-
-async function loadSheet() {
-  sheetId = document.getElementById('sheet-select').value;
-  if (!sheetId) { showStatus('sheet-status', 'Please select a sheet.', 'danger'); return; }
-  sheetName = document.getElementById('sheet-select').selectedOptions[0].text;
-  const btn = document.getElementById('load-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Loading…';
-  showStatus('sheet-status', '<span class="spinner"></span>Loading sheet…', 'info');
-
-  const result = await callClaude(
-    `Using Smartsheet API token "${token}", fetch sheet id ${sheetId} by calling GET https://api.smartsheet.com/2.0/sheets/${sheetId} with Authorization: Bearer <token>. Return the full result as JSON.`
-  );
-
-  btn.disabled = false;
-  btn.innerHTML = 'Load <i class="ti ti-arrow-right" aria-hidden="true"></i>';
-
-  if (!result.success || !result.data) {
-    showStatus('sheet-status', 'Failed to load sheet: ' + (result.error || 'Unknown error'), 'danger');
-    return;
-  }
-
-  columns = result.data.columns || [];
-  rows = result.data.rows || [];
-  hideStatus('sheet-status');
-  document.getElementById('dot2').className = 'step-dot done';
-  document.getElementById('dot2').innerHTML = '<i class="ti ti-check" style="font-size:12px;"></i>';
-  renderSheet();
-}
-
-function renderSheet() {
-  document.getElementById('sheet-panel').style.display = 'block';
-  document.getElementById('sheet-name-display').textContent = sheetName;
-  document.getElementById('sheet-meta').textContent = `${rows.length} row${rows.length!==1?'s':''} · ${columns.length} column${columns.length!==1?'s':''}`;
-
-  const pills = document.getElementById('col-pills');
-  pills.innerHTML = columns.slice(0,10).map(c => `<span class="col-pill">${c.title}</span>`).join('') + (columns.length>10?`<span class="col-pill">+${columns.length-10} more</span>`:'');
-
-  renderRows();
-}
-
-function renderRows() {
-  const visCols = columns.slice(0,5);
-  const statusCol = columns.find(c => c.title.toLowerCase().includes('status'));
-  document.getElementById('row-count').textContent = rows.length ? `${rows.length} project${rows.length!==1?'s':''}` : 'No projects yet';
-
-  if (!rows.length) {
-    document.getElementById('rows-table').innerHTML = '<p style="font-size:13px;color:var(--color-text-secondary);padding:8px 0;">No rows yet. Add your first project above.</p>';
-    return;
-  }
-
-  let html = '<div style="overflow-x:auto;"><table><thead><tr>' + visCols.map(c=>`<th>${c.title}</th>`).join('') + '</tr></thead><tbody>';
-  rows.slice(0,25).forEach(row => {
-    html += '<tr>';
-    visCols.forEach(col => {
-      const cell = (row.cells||[]).find(c => c.columnId === col.id);
-      const val = cell ? (cell.displayValue || cell.value || '') : '';
-      const isStatus = statusCol && col.id === statusCol.id;
-      if (isStatus && val) {
-        const v = String(val).toLowerCase();
-        const cls = v.includes('complete')||v.includes('done') ? 'green' : v.includes('progress')||v.includes('active') ? 'blue' : v.includes('hold')||v.includes('block') ? 'amber' : 'gray';
-        html += `<td><span class="badge ${cls}">${val}</span></td>`;
-      } else {
-        html += `<td title="${val}">${val}</td>`;
+    // ── Connect ───────────────────────────────────────────────────────────────
+    async function connectSheet() {
+      state.token = els.apiToken.value.trim();
+      if (!state.token) {
+        setStatus(els.connectStatus, 'Please enter your API token.', 'danger');
+        return;
       }
-    });
-    html += '</tr>';
-  });
-  if (rows.length>25) html += `<tr><td colspan="${visCols.length}" style="font-size:12px;color:var(--color-text-secondary);">…and ${rows.length-25} more rows</td></tr>`;
-  html += '</tbody></table></div>';
-  document.getElementById('rows-table').innerHTML = html;
-}
+      setLoading(els.connectBtn, true, 'Connecting…');
+      setStatus(els.connectStatus, '<span class="spinner" aria-hidden="true"></span> Connecting to Smartsheet via Claude…', 'info');
 
-function toggleAdd() {
-  const f = document.getElementById('add-form');
-  const showing = f.style.display === 'block';
-  f.style.display = showing ? 'none' : 'block';
-  if (!showing) {
-    const editCols = columns.slice(0,8);
-    document.getElementById('add-fields').innerHTML = editCols.map(c => `
-      <div style="margin-bottom:8px;">
-        <label class="label">${c.title}</label>
-        <input type="text" id="nf-${c.id}" placeholder="${c.title}" style="width:100%;font-size:13px;" />
-      </div>`).join('');
-    hideStatus('add-status');
-  }
-}
+      const result = await callClaude(
+        `Using Smartsheet API token "${state.token}", call GET https://api.smartsheet.com/2.0/sheets with Authorization: Bearer <token>. Return JSON with success and data fields.`
+      );
 
-async function submitRow() {
-  const editCols = columns.slice(0,8);
-  const cells = editCols.map(c => {
-    const el = document.getElementById('nf-'+c.id);
-    return el && el.value ? { columnId: c.id, value: el.value } : null;
-  }).filter(Boolean);
+      setLoading(els.connectBtn, false, 'Connect');
 
-  if (!cells.length) { showStatus('add-status','Fill in at least one field.','danger'); return; }
-  showStatus('add-status','<span class="spinner"></span>Adding project…','info');
+      if (!result.success || !result.data) {
+        setStatus(els.connectStatus, `Connection failed: ${result.error ?? 'Unknown error'}`, 'danger');
+        return;
+      }
 
-  const result = await callClaude(
-    `Using Smartsheet API token "${token}", add a new row to sheet ${sheetId} by calling POST https://api.smartsheet.com/2.0/sheets/${sheetId}/rows with Authorization: Bearer <token>, Content-Type: application/json, and body: ${JSON.stringify([{toBottom:true, cells}])}. Return result as JSON.`
-  );
+      const sheets = result.data.data ?? [];
+      if (!sheets.length) {
+        setStatus(els.connectStatus, 'Connected but no sheets found.', 'danger');
+        return;
+      }
 
-  if (!result.success) {
-    showStatus('add-status','Error: '+(result.error||'Failed to add'),'danger');
-    return;
-  }
-  showStatus('add-status','Project added!','success');
-  setTimeout(() => { toggleAdd(); refreshSheet(); }, 1000);
-}
+      els.sheetSelect.innerHTML =
+        '<option value="">— pick a sheet —</option>' +
+        sheets.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
 
-async function refreshSheet() {
-  showStatus('sheet-status','<span class="spinner"></span>Refreshing…','info');
-  const result = await callClaude(
-    `Using Smartsheet API token "${token}", fetch sheet id ${sheetId} by calling GET https://api.smartsheet.com/2.0/sheets/${sheetId} with Authorization: Bearer <token>. Return the full result as JSON.`
-  );
-  hideStatus('sheet-status');
-  if (result.success && result.data) {
-    columns = result.data.columns || [];
-    rows = result.data.rows || [];
-    renderSheet();
-  }
-}
+      els.sheetSelector.hidden = false;
+      stepDone(els.dot1);
+      setStatus(els.connectStatus, `Connected — ${sheets.length} sheet${sheets.length !== 1 ? 's' : ''} found.`, 'success');
+    }
 
-function weeklyReview() {
-  const summary = rows.slice(0,30).map(row => {
-    return columns.slice(0,5).map(col => {
-      const cell = (row.cells||[]).find(c => c.columnId===col.id);
-      return `${col.title}: ${cell ? (cell.displayValue||cell.value||'') : ''}`;
-    }).join(', ');
-  }).join('\n');
-  sendPrompt(`Here is my Design Project Plan sheet "${sheetName}" with ${rows.length} projects:\n\n${summary}\n\nPlease review this and tell me which projects likely need a status update this week, and flag anything that looks stale, blocked, or missing information.`);
-}
-</script>
+    // ── Load sheet ────────────────────────────────────────────────────────────
+    async function loadSheet() {
+      state.sheetId = els.sheetSelect.value;
+      if (!state.sheetId) {
+        setStatus(els.sheetStatus, 'Please select a sheet.', 'danger');
+        return;
+      }
+      state.sheetName = els.sheetSelect.selectedOptions[0].text;
+      setLoading(els.loadBtn, true, 'Loading…');
+      setStatus(els.sheetStatus, '<span class="spinner" aria-hidden="true"></span> Loading sheet…', 'info');
+
+      const result = await callClaude(
+        `Using Smartsheet API token "${state.token}", call GET https://api.smartsheet.com/2.0/sheets/${state.sheetId} with Authorization: Bearer <token>. Return full JSON.`
+      );
+
+      setLoading(els.loadBtn, false, 'Load');
+
+      if (!result.success || !result.data) {
+        setStatus(els.sheetStatus, `Failed to load: ${result.error ?? 'Unknown error'}`, 'danger');
+        return;
+      }
+
+      state.columns = result.data.columns ?? [];
+      state.rows    = result.data.rows    ?? [];
+      clearStatus(els.sheetStatus);
+      stepDone(els.dot2);
+      renderSheet();
+    }
+
+    // ── Render ────────────────────────────────────────────────────────────────
+    function renderSheet() {
+      els.sheetPanel.hidden = false;
+      els.sheetName.textContent = state.sheetName;
+      els.sheetMeta.textContent = `${state.rows.length} row${state.rows.length !== 1 ? 's' : ''} · ${state.columns.length} column${state.columns.length !== 1 ? 's' : ''}`;
+
+      const visible = state.columns.slice(0, 10);
+      const overflow = state.columns.length - 10;
+      els.colPills.innerHTML =
+        visible.map(c => `<span class="pill">${c.title}</span>`).join('') +
+        (overflow > 0 ? `<span class="pill">+${overflow} more</span>` : '');
+
+      renderRows();
+    }
+
+    function renderRows() {
+      const visCols   = state.columns.slice(0, 5);
+      const statusCol = state.columns.find(c => c.title.toLowerCase().includes('status'));
+      const MAX_ROWS  = 25;
+
+      els.rowCount.textContent = state.rows.length
+        ? `${state.rows.length} project${state.rows.length !== 1 ? 's' : ''}`
+        : 'No projects yet';
+
+      if (!state.rows.length) {
+        els.rowsTable.innerHTML = '<p class="empty-state">No rows yet. Add your first project above.</p>';
+        return;
+      }
+
+      const thead = `<thead><tr>${visCols.map(c => `<th>${c.title}</th>`).join('')}</tr></thead>`;
+      const tbodyRows = state.rows.slice(0, MAX_ROWS).map(row => {
+        const cells = visCols.map(col => {
+          const cell = (row.cells ?? []).find(c => c.columnId === col.id);
+          const val  = cell ? String(cell.displayValue ?? cell.value ?? '') : '';
+          const isStatus = statusCol && col.id === statusCol.id;
+          if (isStatus && val) {
+            return `<td><span class="badge ${badgeClass(val)}">${val}</span></td>`;
+          }
+          return `<td title="${val}">${val}</td>`;
+        }).join('');
+        return `<tr>${cells}</tr>`;
+      }).join('');
+
+      const overflow = state.rows.length > MAX_ROWS
+        ? `<tr><td colspan="${visCols.length}" style="font-size:0.75rem;color:var(--color-text-secondary)">…and ${state.rows.length - MAX_ROWS} more rows</td></tr>`
+        : '';
+
+      els.rowsTable.innerHTML = `<div class="table-wrap"><table>${thead}<tbody>${tbodyRows}${overflow}</tbody></table></div>`;
+    }
+
+    // ── Add project ───────────────────────────────────────────────────────────
+    function toggleAdd(force) {
+      const open = force ?? !els.addForm.classList.contains('is-open');
+      els.addForm.classList.toggle('is-open', open);
+      if (open) {
+        els.addFields.innerHTML = state.columns.slice(0, 8).map(c => `
+          <div>
+            <label class="field-label" for="nf-${c.id}">${c.title}</label>
+            <input type="text" id="nf-${c.id}" placeholder="${c.title}" />
+          </div>`).join('');
+        clearStatus(els.addStatus);
+      }
+    }
+
+    async function submitRow() {
+      const cells = state.columns.slice(0, 8).flatMap(c => {
+        const el  = document.getElementById(`nf-${c.id}`);
+        return el?.value ? [{ columnId: c.id, value: el.value }] : [];
+      });
+
+      if (!cells.length) {
+        setStatus(els.addStatus, 'Fill in at least one field.', 'danger');
+        return;
+      }
+      setStatus(els.addStatus, '<span class="spinner" aria-hidden="true"></span> Adding project…', 'info');
+
+      const result = await callClaude(
+        `Using Smartsheet API token "${state.token}", POST to https://api.smartsheet.com/2.0/sheets/${state.sheetId}/rows with Authorization: Bearer <token>, Content-Type: application/json, body: ${JSON.stringify([{ toBottom: true, cells }])}. Return JSON.`
+      );
+
+      if (!result.success) {
+        setStatus(els.addStatus, `Error: ${result.error ?? 'Failed to add'}`, 'danger');
+        return;
+      }
+
+      setStatus(els.addStatus, 'Project added!', 'success');
+      setTimeout(() => { toggleAdd(false); refreshSheet(); }, 1000);
+    }
+
+    // ── Refresh ───────────────────────────────────────────────────────────────
+    async function refreshSheet() {
+      setStatus(els.sheetStatus, '<span class="spinner" aria-hidden="true"></span> Refreshing…', 'info');
+      const result = await callClaude(
+        `Using Smartsheet API token "${state.token}", call GET https://api.smartsheet.com/2.0/sheets/${state.sheetId} with Authorization: Bearer <token>. Return full JSON.`
+      );
+      clearStatus(els.sheetStatus);
+      if (result.success && result.data) {
+        state.columns = result.data.columns ?? [];
+        state.rows    = result.data.rows    ?? [];
+        renderSheet();
+      }
+    }
+
+    // ── Weekly review ─────────────────────────────────────────────────────────
+    function weeklyReview() {
+      const summary = state.rows.slice(0, 30).map(row =>
+        state.columns.slice(0, 5).map(col => {
+          const cell = (row.cells ?? []).find(c => c.columnId === col.id);
+          return `${col.title}: ${cell ? String(cell.displayValue ?? cell.value ?? '') : ''}`;
+        }).join(', ')
+      ).join('\n');
+
+      if (typeof sendPrompt === 'function') {
+        sendPrompt(`Here is my Design Project Plan sheet "${state.sheetName}" with ${state.rows.length} projects:\n\n${summary}\n\nPlease review and flag projects that need a status update this week, and note anything stale, blocked, or missing info.`);
+      }
+    }
+
+    // ── Event listeners ───────────────────────────────────────────────────────
+    els.connectBtn.addEventListener('click', connectSheet);
+    els.loadBtn.addEventListener('click', loadSheet);
+    els.refreshBtn.addEventListener('click', refreshSheet);
+    els.addBtn.addEventListener('click', () => toggleAdd());
+    els.saveBtn.addEventListener('click', submitRow);
+    els.cancelBtn.addEventListener('click', () => toggleAdd(false));
+    els.weeklyBtn.addEventListener('click', weeklyReview);
+
+    els.apiToken.addEventListener('keydown', e => { if (e.key === 'Enter') connectSheet(); });
+    els.sheetSelect.addEventListener('keydown', e => { if (e.key === 'Enter') loadSheet(); });
+  </script>
+</body>
+</html>
