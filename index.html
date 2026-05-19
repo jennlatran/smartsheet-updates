@@ -264,7 +264,7 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
         Design project plan updater
       </h1>
-      <p>Claude securely proxies your Smartsheet requests — no CORS issues.</p>
+      <p>Connect your Smartsheet account to view and manage your design projects.</p>
     </header>
 
     <!-- Step 1: Connect -->
@@ -417,22 +417,23 @@
       return 'badge--gray';
     }
 
-    // ── Claude proxy ──────────────────────────────────────────────────────────
-    async function callClaude(prompt) {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: `You are a Smartsheet API assistant. Call the Smartsheet REST API using fetch() and return ONLY a JSON object: {"success": true/false, "data": <parsed response>, "error": "optional string"}. No commentary. No markdown. Raw JSON only.`,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      });
-      const json = await res.json();
-      const text = (json.content ?? []).map(b => b.text ?? '').join('');
-      try { return JSON.parse(text); }
-      catch { return { success: false, error: text }; }
+    // ── Smartsheet API ────────────────────────────────────────────────────────
+    async function ss(method, path, body) {
+      try {
+        const res = await fetch(`https://api.smartsheet.com/2.0${path}`, {
+          method,
+          headers: {
+            'Authorization': `Bearer ${state.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: body ? JSON.stringify(body) : undefined,
+        });
+        const data = await res.json();
+        if (!res.ok) return { success: false, error: data.message ?? `HTTP ${res.status}` };
+        return { success: true, data };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
     }
 
     // ── Connect ───────────────────────────────────────────────────────────────
@@ -443,11 +444,9 @@
         return;
       }
       setLoading(els.connectBtn, true, 'Connecting…');
-      setStatus(els.connectStatus, '<span class="spinner" aria-hidden="true"></span> Connecting to Smartsheet via Claude…', 'info');
+      setStatus(els.connectStatus, '<span class="spinner" aria-hidden="true"></span> Connecting to Smartsheet…', 'info');
 
-      const result = await callClaude(
-        `Using Smartsheet API token "${state.token}", call GET https://api.smartsheet.com/2.0/sheets with Authorization: Bearer <token>. Return JSON with success and data fields.`
-      );
+      const result = await ss('GET', '/sheets');
 
       setLoading(els.connectBtn, false, 'Connect');
 
@@ -482,9 +481,7 @@
       setLoading(els.loadBtn, true, 'Loading…');
       setStatus(els.sheetStatus, '<span class="spinner" aria-hidden="true"></span> Loading sheet…', 'info');
 
-      const result = await callClaude(
-        `Using Smartsheet API token "${state.token}", call GET https://api.smartsheet.com/2.0/sheets/${state.sheetId} with Authorization: Bearer <token>. Return full JSON.`
-      );
+      const result = await ss('GET', `/sheets/${state.sheetId}`);
 
       setLoading(els.loadBtn, false, 'Load');
 
@@ -576,9 +573,7 @@
       }
       setStatus(els.addStatus, '<span class="spinner" aria-hidden="true"></span> Adding project…', 'info');
 
-      const result = await callClaude(
-        `Using Smartsheet API token "${state.token}", POST to https://api.smartsheet.com/2.0/sheets/${state.sheetId}/rows with Authorization: Bearer <token>, Content-Type: application/json, body: ${JSON.stringify([{ toBottom: true, cells }])}. Return JSON.`
-      );
+      const result = await ss('POST', `/sheets/${state.sheetId}/rows`, [{ toBottom: true, cells }]);
 
       if (!result.success) {
         setStatus(els.addStatus, `Error: ${result.error ?? 'Failed to add'}`, 'danger');
@@ -592,9 +587,7 @@
     // ── Refresh ───────────────────────────────────────────────────────────────
     async function refreshSheet() {
       setStatus(els.sheetStatus, '<span class="spinner" aria-hidden="true"></span> Refreshing…', 'info');
-      const result = await callClaude(
-        `Using Smartsheet API token "${state.token}", call GET https://api.smartsheet.com/2.0/sheets/${state.sheetId} with Authorization: Bearer <token>. Return full JSON.`
-      );
+      const result = await ss('GET', `/sheets/${state.sheetId}`);
       clearStatus(els.sheetStatus);
       if (result.success && result.data) {
         state.columns = result.data.columns ?? [];
