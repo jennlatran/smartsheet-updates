@@ -203,23 +203,26 @@
     @media (max-width: 480px) { .add-fields { grid-template-columns: 1fr; } }
 
     /* Table */
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; font-size: 0.8125rem; border-collapse: collapse; table-layout: fixed; }
+    table { width: 100%; font-size: 0.8125rem; border-collapse: collapse; }
     th {
       text-align: left;
-      padding: 6px 8px;
+      padding: 6px 12px;
       font-weight: 600;
       font-size: 0.75rem;
       color: var(--color-text-secondary);
       border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+      background: var(--color-bg);
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
     td {
-      padding: 7px 8px;
+      padding: 7px 12px;
       border-bottom: 1px solid var(--color-border);
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
+    .table-wrap { overflow-x: auto; max-height: 600px; overflow-y: auto; }
     tr:last-child td { border-bottom: none; }
     .row-count { font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.625rem; }
     .empty-state { font-size: 0.8125rem; color: var(--color-text-secondary); padding: 0.5rem 0; }
@@ -502,7 +505,7 @@
         return;
       }
 
-      state.columns = result.data.columns ?? [];
+      state.columns = (result.data.columns ?? []).filter(c => !c.hidden);
       state.rows    = result.data.rows    ?? [];
       clearStatus(els.sheetStatus);
       stepDone(els.dot2);
@@ -618,7 +621,7 @@
       const result = await ss('GET', `/sheets/${state.sheetId}`);
       clearStatus(els.sheetStatus);
       if (result.success && result.data) {
-        state.columns = result.data.columns ?? [];
+        state.columns = (result.data.columns ?? []).filter(c => !c.hidden);
         state.rows    = result.data.rows    ?? [];
         renderSheet();
       }
