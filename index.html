@@ -260,9 +260,9 @@
   <main class="app" aria-label="Design project plan updater">
 
     <div id="file-warning" hidden style="background:#faeeda;border:1px solid #f0c070;border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.8125rem;color:#854f0b;line-height:1.6;">
-      <strong>⚠ Open this file via a local server, not directly from Finder.</strong><br>
-      Browsers block API calls from <code>file://</code> pages. Run this in your terminal:<br>
-      <code style="display:inline-block;margin-top:4px;background:rgba(0,0,0,.08);padding:2px 8px;border-radius:4px;">python3 -m http.server 8080</code>
+      <strong>⚠ Open this file via the proxy server, not directly from Finder.</strong><br>
+      Run this in your terminal from the project folder:<br>
+      <code style="display:inline-block;margin-top:4px;background:rgba(0,0,0,.08);padding:2px 8px;border-radius:4px;">python3 server.py</code>
       &nbsp;then open <code>http://localhost:8080</code>
     </div>
 
@@ -429,10 +429,10 @@
       return 'badge--gray';
     }
 
-    // ── Smartsheet API ────────────────────────────────────────────────────────
+    // ── Smartsheet API (proxied via server.py) ────────────────────────────────
     async function ss(method, path, body) {
       try {
-        const res = await fetch(`https://api.smartsheet.com/2.0${path}`, {
+        const res = await fetch(`/api${path}`, {
           method,
           headers: {
             'Authorization': `Bearer ${state.token}`,
