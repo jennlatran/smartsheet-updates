@@ -514,49 +514,65 @@
       els.sheetPanel.hidden = false;
       els.sheetName.textContent = state.sheetName;
       els.sheetMeta.textContent = `${state.rows.length} row${state.rows.length !== 1 ? 's' : ''} · ${state.columns.length} column${state.columns.length !== 1 ? 's' : ''}`;
-
-      const visible = state.columns.slice(0, 10);
-      const overflow = state.columns.length - 10;
-      els.colPills.innerHTML =
-        visible.map(c => `<span class="pill">${c.title}</span>`).join('') +
-        (overflow > 0 ? `<span class="pill">+${overflow} more</span>` : '');
-
+      els.colPills.innerHTML = state.columns.map(c => `<span class="pill">${c.title}</span>`).join('');
       renderRows();
     }
 
     function renderRows() {
-      const visCols   = state.columns.slice(0, 5);
-      const statusCol = state.columns.find(c => c.title.toLowerCase().includes('status'));
-      const MAX_ROWS  = 25;
-
       els.rowCount.textContent = state.rows.length
-        ? `${state.rows.length} project${state.rows.length !== 1 ? 's' : ''}`
-        : 'No projects yet';
+        ? `${state.rows.length} row${state.rows.length !== 1 ? 's' : ''}`
+        : 'No rows yet';
 
       if (!state.rows.length) {
         els.rowsTable.innerHTML = '<p class="empty-state">No rows yet. Add your first project above.</p>';
         return;
       }
 
-      const thead = `<thead><tr>${visCols.map(c => `<th>${c.title}</th>`).join('')}</tr></thead>`;
-      const tbodyRows = state.rows.slice(0, MAX_ROWS).map(row => {
-        const cells = visCols.map(col => {
+      const pctCol  = state.columns.find(c => /percent|complete|%/i.test(c.title));
+      const firstCol = state.columns[0];
+
+      const thead = `<thead><tr>${state.columns.map(c => `<th>${c.title}</th>`).join('')}</tr></thead>`;
+
+      const tbodyRows = state.rows.map(row => {
+        const indent = (row.indent ?? 1) - 1;
+        const isParent = !!row.expanded !== undefined && row.cells?.some(c => !c.value && !c.displayValue) === false;
+
+        const cells = state.columns.map((col, i) => {
           const cell = (row.cells ?? []).find(c => c.columnId === col.id);
           const val  = cell ? String(cell.displayValue ?? cell.value ?? '') : '';
-          const isStatus = statusCol && col.id === statusCol.id;
-          if (isStatus && val) {
-            return `<td><span class="badge ${badgeClass(val)}">${val}</span></td>`;
+
+          // First column: indent to show hierarchy
+          if (i === 0) {
+            const pad = indent * 16;
+            const weight = indent === 0 ? '600' : '400';
+            return `<td title="${val}" style="padding-left:${8 + pad}px;font-weight:${weight}">${val}</td>`;
           }
+
+          // % Complete column: show as a small progress bar
+          if (pctCol && col.id === pctCol.id && val) {
+            const num = parseFloat(val);
+            if (!isNaN(num)) {
+              return `<td>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <div style="flex:1;background:#e5e7eb;border-radius:4px;height:6px;min-width:48px;">
+                    <div style="width:${Math.min(num,100)}%;background:#185fa5;border-radius:4px;height:6px;"></div>
+                  </div>
+                  <span style="font-size:0.75rem;color:var(--color-text-secondary);white-space:nowrap">${val}</span>
+                </div>
+              </td>`;
+            }
+          }
+
           return `<td title="${val}">${val}</td>`;
         }).join('');
-        return `<tr>${cells}</tr>`;
+
+        const rowStyle = indent === 0
+          ? 'background:var(--color-bg-secondary);font-weight:600;'
+          : '';
+        return `<tr style="${rowStyle}">${cells}</tr>`;
       }).join('');
 
-      const overflow = state.rows.length > MAX_ROWS
-        ? `<tr><td colspan="${visCols.length}" style="font-size:0.75rem;color:var(--color-text-secondary)">…and ${state.rows.length - MAX_ROWS} more rows</td></tr>`
-        : '';
-
-      els.rowsTable.innerHTML = `<div class="table-wrap"><table>${thead}<tbody>${tbodyRows}${overflow}</tbody></table></div>`;
+      els.rowsTable.innerHTML = `<div class="table-wrap"><table>${thead}<tbody>${tbodyRows}</tbody></table></div>`;
     }
 
     // ── Add project ───────────────────────────────────────────────────────────
@@ -564,7 +580,7 @@
       const open = force ?? !els.addForm.classList.contains('is-open');
       els.addForm.classList.toggle('is-open', open);
       if (open) {
-        els.addFields.innerHTML = state.columns.slice(0, 8).map(c => `
+        els.addFields.innerHTML = state.columns.map(c => `
           <div>
             <label class="field-label" for="nf-${c.id}">${c.title}</label>
             <input type="text" id="nf-${c.id}" placeholder="${c.title}" />
@@ -574,7 +590,7 @@
     }
 
     async function submitRow() {
-      const cells = state.columns.slice(0, 8).flatMap(c => {
+      const cells = state.columns.flatMap(c => {
         const el  = document.getElementById(`nf-${c.id}`);
         return el?.value ? [{ columnId: c.id, value: el.value }] : [];
       });
