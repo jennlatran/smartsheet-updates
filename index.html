@@ -85,7 +85,7 @@
     hr.div { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
 
     /* ── Sheet layout ── */
-    .sheet-layout { display: grid; grid-template-columns: 1fr 360px; gap: 1rem; align-items: start; }
+    .sheet-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1rem; align-items: start; }
     @media (max-width: 900px) { .sheet-layout { grid-template-columns: 1fr; } }
 
     /* ── Sheet header ── */
@@ -254,7 +254,13 @@
         </section>
 
         <section class="card">
-          <p class="row-count" id="row-count"></p>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.625rem;">
+            <p class="row-count" id="row-count" style="margin:0"></p>
+            <div style="display:flex;gap:.375rem;">
+              <button id="expand-all-btn" style="font-size:.6875rem;padding:2px 8px;">Expand all</button>
+              <button id="collapse-all-btn" style="font-size:.6875rem;padding:2px 8px;">Collapse all</button>
+            </div>
+          </div>
           <div id="rows-table"></div>
         </section>
       </div>
@@ -419,7 +425,9 @@
 
     state.columns  = (result.data.columns ?? []).filter(c => !c.hidden);
     state.rows     = result.data.rows ?? [];
-    state.collapsed.clear();
+    // start fully collapsed — only root rows visible
+    const parentIds = new Set(state.rows.filter(r => r.parentId).map(r => r.parentId));
+    state.collapsed = parentIds;
     clearStatus(els.sheetStatus);
     stepDone(els.dot2);
     renderSheet();
@@ -722,6 +730,13 @@ Be concise. Use bullet points for lists. When you add a row, briefly confirm wha
   // quick prompt buttons
   document.querySelectorAll('.quick-btn[data-prompt]').forEach(btn => {
     btn.addEventListener('click', () => sendMessage(btn.dataset.prompt));
+  });
+
+  $('expand-all-btn').addEventListener('click', () => { state.collapsed.clear(); renderRows(); });
+  $('collapse-all-btn').addEventListener('click', () => {
+    const parentIds = new Set(state.rows.filter(r => r.parentId).map(r => r.parentId));
+    state.collapsed = parentIds;
+    renderRows();
   });
 
   els.apiToken.addEventListener('keydown', e => { if (e.key === 'Enter') connectSheet(); });
